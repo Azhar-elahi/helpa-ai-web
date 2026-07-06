@@ -61,6 +61,7 @@ export async function addLead(data: any) {
     if (data.company) fields["Website"] = data.company
     if (data.phone) fields["Phone"] = data.phone
     if (data.otp) fields["OTP"] = data.otp
+    if (data.password) fields["Password"] = data.password
     
     const record = await base(TABLES.LEADS).create([{ fields }])
     return record[0].getId()

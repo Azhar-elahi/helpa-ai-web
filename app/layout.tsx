@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   description: "AI-powered automation, SEO, and web design for modern businesses. Scale smarter with Helpa AI.",
 }
 
+import { Providers } from "@/components/Providers"
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${jakarta.variable}`}>
@@ -24,9 +26,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="absolute top-[20%] left-[30%] w-[200px] h-[200px] bg-accent-teal/20 rounded-full blur-[60px] animate-float" style={{ animationDelay: "1s" }} />
         </div>
         <div className="relative z-10 flex flex-col min-h-screen">
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <Providers>
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </Providers>
         </div>
       </body>
     </html>

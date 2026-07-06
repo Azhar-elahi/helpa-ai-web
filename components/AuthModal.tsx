@@ -1,7 +1,8 @@
 "use client"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Mail, Lock, User, ArrowRight, Sparkles } from "lucide-react"
+import { X, Mail, Lock, User, ArrowRight, Sparkles, Building2 } from "lucide-react"
+import { signIn } from "next-auth/react"
 
 interface AuthModalProps {
   isOpen: boolean
@@ -12,16 +13,61 @@ interface AuthModalProps {
 export default function AuthModal({ isOpen, onClose, defaultMode = "signup" }: AuthModalProps) {
   const [mode, setMode] = useState(defaultMode)
   const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState("")
   const [formData, setFormData] = useState({ name: "", email: "", password: "", company: "" })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setTimeout(() => {
+    setErrorMsg("")
+
+    try {
+      if (mode === "signup") {
+        // Create user
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData)
+        })
+        const data = await res.json()
+        
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to create account")
+        }
+
+        // Login after successful signup
+        const signInRes = await signIn("credentials", {
+          redirect: false,
+          email: formData.email,
+          password: formData.password
+        })
+
+        if (signInRes?.error) throw new Error(signInRes.error)
+        
+        onClose()
+      } else {
+        // Login
+        const signInRes = await signIn("credentials", {
+          redirect: false,
+          email: formData.email,
+          password: formData.password
+        })
+
+        if (signInRes?.error) {
+          throw new Error(signInRes.error)
+        }
+        
+        onClose()
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "An unexpected error occurred.")
+    } finally {
       setLoading(false)
-      onClose()
-      alert(mode === "signup" ? "Account created successfully! Welcome to Helpa AI." : "Welcome back!")
-    }, 1500)
+    }
+  }
+
+  const handleGoogleAuth = () => {
+    signIn("google", { callbackUrl: "/download" })
   }
 
   return (
@@ -79,7 +125,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "signup" }: A
               <form onSubmit={handleSubmit} className="space-y-4">
                 <button
                   type="button"
-                  onClick={() => alert("Google Auth integration pending")}
+                  onClick={handleGoogleAuth}
                   className="w-full py-3 rounded-xl font-semibold text-slate-100 bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors flex items-center justify-center gap-3 text-sm"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -97,6 +143,12 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "signup" }: A
                   <div className="flex-grow border-t border-slate-700"></div>
                 </div>
 
+                {errorMsg && (
+                  <div className="text-red-400 text-sm text-center bg-red-900/20 py-2 rounded border border-red-900/50">
+                    {errorMsg}
+                  </div>
+                )}
+
                 {mode === "signup" && (
                   <div className="space-y-4">
                     <div className="relative">
@@ -111,7 +163,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "signup" }: A
                       />
                     </div>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                       <input
                         type="text"
                         placeholder="Company Name (Optional)"
