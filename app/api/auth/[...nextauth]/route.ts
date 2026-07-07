@@ -43,17 +43,20 @@ const handler = NextAuth({
   callbacks: {
     async signIn({ user, account, profile }) {
       if (account?.provider === "google") {
-        // Check if user exists in Airtable
-        if (user.email) {
-          const existingLead = await findLeadByEmail(user.email)
-          if (!existingLead) {
-            // Add Google user to Airtable Leads
-            await addLead({
-              name: user.name || "Google User",
-              email: user.email,
-              status: "New Client"
-            })
+        try {
+          if (user.email) {
+            const existingLead = await findLeadByEmail(user.email)
+            if (!existingLead) {
+              await addLead({
+                name: user.name || "Google User",
+                email: user.email,
+                status: "New Client"
+              })
+            }
           }
+        } catch (err) {
+          console.error("Airtable sync failed during Google Login:", err)
+          // Still allow login even if Airtable fails
         }
       }
       return true
@@ -73,6 +76,7 @@ const handler = NextAuth({
     signIn: '/download', // Since our modal is on the download page
   },
   secret: process.env.NEXTAUTH_SECRET || "fallback_secret_for_development",
+  debug: true,
 })
 
 export { handler as GET, handler as POST }
